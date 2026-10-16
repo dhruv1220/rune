@@ -1104,11 +1104,19 @@ func (vi *viHandlerImpl) handleNormal(ev term.Event) (quit, handled bool) {
 				}
 			}
 		case 'x':
-			vi.cursor.Delete()
+			for range vi.count {
+				if !vi.cursor.Delete() {
+					break
+				}
+			}
 		case '~':
 			vi.cursor.ToggleCase()
 		case 's':
-			vi.cursor.Delete()
+			for range vi.count {
+				if !vi.cursor.Delete() {
+					break
+				}
+			}
 			vi.setInsertMode()
 		case 'S':
 			vi.cursor.MoveStartLine()

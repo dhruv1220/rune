@@ -2873,6 +2873,76 @@ func TestViX(t *testing.T) {
 	}
 }
 
+func TestViCountedDeleteSubstitute(t *testing.T) {
+	suite := []struct {
+		name          string
+		content       string
+		events        string
+		expectContent string
+		expectCoords  *term.Coordinates
+		expectMode    viMode
+	}{
+		{
+			name:          "s deletes character under cursor and enters insert mode",
+			content:       "abcd",
+			events:        "s",
+			expectContent: "bcd",
+			expectCoords:  &term.Coordinates{X: 0, Y: 0},
+			expectMode:    insertMode,
+		},
+		{
+			name:          "2s deletes two characters and enters insert mode",
+			content:       "abcd",
+			events:        "2s",
+			expectContent: "cd",
+			expectCoords:  &term.Coordinates{X: 0, Y: 0},
+			expectMode:    insertMode,
+		},
+		{
+			name:          "3s at end of line deletes to line end",
+			content:       "abcd",
+			events:        "lll3s",
+			expectContent: "abc",
+			expectCoords:  &term.Coordinates{X: 3, Y: 0},
+			expectMode:    insertMode,
+		},
+		{
+			name:          "2x deletes two characters and stays in normal mode",
+			content:       "abcd",
+			events:        "2x",
+			expectContent: "cd",
+			expectCoords:  &term.Coordinates{X: 0, Y: 0},
+			expectMode:    normalMode,
+		},
+		{
+			name:          "2x past end of line deletes what remains",
+			content:       "abcd",
+			events:        "lll2x",
+			expectContent: "abc",
+			expectCoords:  &term.Coordinates{X: 2, Y: 0},
+			expectMode:    normalMode,
+		},
+	}
+
+	for _, tcase := range suite {
+		t.Run(tcase.name, func(t *testing.T) {
+			vi := setupVi(t, tcase.content, 2)
+			vi.Resize(20, 9)
+			vi.Draw(term.NoopWriter{})
+
+			for _, eventChar := range tcase.events {
+				vi.Handle(term.Event{Type: term.EventKey, Ch: eventChar})
+			}
+
+			assert.Equal(t, tcase.expectContent, vi.less.Buffer().String())
+			if tcase.expectCoords != nil {
+				assert.Equal(t, *tcase.expectCoords, vi.cursor.Coordinates())
+			}
+			assert.Equal(t, tcase.expectMode, vi.mode())
+		})
+	}
+}
+
 func TestVidd(t *testing.T) {
 	suite := []struct {
 		name             string
